@@ -153,7 +153,7 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(HTTPConfig.this);
         alertDialog.setTitle("Command "+number + " details");
-        alertDialog.setMessage("Fill in the HTTP GET URL");
+        alertDialog.setMessage("Fill in the Name and HTTP GET URL");
 
         LinearLayout layout = new LinearLayout(HTTPConfig.this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -192,16 +192,17 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         String url = URLText.getText().toString();
+                        String name = NameText.getText().toString();
+
                         //set the URL to a SharedPreference
                         SharedPreferences sharedpreferences = getSharedPreferences(sprefs, Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedpreferences.edit();
-                        if(url != null) {
+                        if(url != null && !url.isEmpty()) {
                             editor.putString(prefsfornumber, url);
                             editor.commit();
                         }
-                        String name = NameText.getText().toString();
                         //set the NAME to a SharedPreference
-                        if(name != null) {
+                        if(name != null && !name.isEmpty()) {
                             editor.putString(prefsforname, name);
                             editor.commit();
                             int cmdBtn = HTTPConfig.this.getResources().getIdentifier("command"+number, "id", HTTPConfig.this.getPackageName());

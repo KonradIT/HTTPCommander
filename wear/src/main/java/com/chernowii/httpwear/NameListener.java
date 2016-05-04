@@ -7,6 +7,8 @@ import android.widget.Toast;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import java.util.Arrays;
+
 /**
  * Created by Konrad Iturbe on 05/03/16.
  */
@@ -17,16 +19,16 @@ public class NameListener extends WearableListenerService {
     public void onMessageReceived(MessageEvent messageEvent) {
         super.onMessageReceived(messageEvent);
         if (messageEvent.getPath().equals("/name1")) {
-            setname_command("1", String.valueOf(messageEvent.getData()));
+            setname_command("1", new String(messageEvent.getData()));
         }
         if (messageEvent.getPath().equals("/name2")) {
-            setname_command("2", String.valueOf(messageEvent.getData()));
+            setname_command("2", new String(messageEvent.getData()));
         }
         if (messageEvent.getPath().equals("/name3")) {
-            setname_command("3", String.valueOf(messageEvent.getData()));
+            setname_command("3", new String(messageEvent.getData()));
         }
         if (messageEvent.getPath().equals("/name4")) {
-            setname_command("4", String.valueOf(messageEvent.getData()));
+            setname_command("4", new String(messageEvent.getData()));
         }
     }
     void setname_command(String id, String name){
