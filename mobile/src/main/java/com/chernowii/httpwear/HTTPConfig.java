@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -30,8 +32,10 @@ import com.google.android.gms.wearable.Wearable;
 
 import java.io.IOException;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
@@ -150,12 +154,17 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
     public void launchConfig(final String number){
         final String prefsfornumber = "url_comm"+number;
         final String prefsforname = "name_comm"+number;
+        final String prefsforgetpost = "getpost_comm"+number;
+        final String prefsformimetype = "postmime_comm"+number;
+        final String prefsforpostdata = "postdata_comm"+number;
 
-        AlertDialog.Builder alertDialog = new AlertDialog.Builder(HTTPConfig.this);
+
+
+        final AlertDialog.Builder alertDialog = new AlertDialog.Builder(HTTPConfig.this);
         alertDialog.setTitle("Command "+number + " details");
         alertDialog.setMessage("Fill in the Name and HTTP GET URL");
 
-        LinearLayout layout = new LinearLayout(HTTPConfig.this);
+        final LinearLayout layout = new LinearLayout(HTTPConfig.this);
         layout.setOrientation(LinearLayout.VERTICAL);
 
         final EditText NameText = new EditText(HTTPConfig.this);
@@ -165,7 +174,28 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
         final EditText URLText = new EditText(HTTPConfig.this);
         URLText.setHint("http://");
         layout.addView(URLText);
-        
+
+        //
+        final EditText MIMEType = new EditText(HTTPConfig.this);
+        final EditText POSTParams = new EditText(HTTPConfig.this);
+        //
+
+        final CheckBox GetPostBox = new CheckBox(HTTPConfig.this);
+        GetPostBox.setText("Unchecked=GET / Checked=POST");
+        layout.addView(GetPostBox);
+        GetPostBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked){
+                    MIMEType.setHint("Type (text/x-markdown; charset=utf-8)");
+                    layout.addView(MIMEType);
+
+                    POSTParams.setHint("Parameters");
+                    layout.addView(POSTParams);
+                    alertDialog.setView(layout);
+                }
+            }
+        });
         SharedPreferences sharedpreferences = getSharedPreferences(sprefs, Context.MODE_PRIVATE);
 
         String restoredText = sharedpreferences.getString(prefsfornumber, null);
@@ -194,11 +224,29 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
                         String url = URLText.getText().toString();
                         String name = NameText.getText().toString();
 
+                        String MimeType = MIMEType.getText().toString();
+                        String postParams = POSTParams.getText().toString();
                         //set the URL to a SharedPreference
                         SharedPreferences sharedpreferences = getSharedPreferences(sprefs, Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedpreferences.edit();
                         if(url != null && !url.isEmpty()) {
                             editor.putString(prefsfornumber, url);
+                            editor.commit();
+                        }
+                        if(MimeType != null && !MimeType.isEmpty()) {
+                            editor.putString(prefsformimetype, MimeType);
+                            editor.commit();
+                        }
+                        if(postParams != null && !postParams.isEmpty()) {
+                            editor.putString(prefsforpostdata, postParams);
+                            editor.commit();
+                        }
+                        if(GetPostBox != null && GetPostBox.isChecked()) {
+                            editor.putBoolean(prefsforgetpost, true);
+                            editor.commit();
+                        }
+                        else{
+                            editor.putBoolean(prefsforgetpost, false);
                             editor.commit();
                         }
                         //set the NAME to a SharedPreference
@@ -253,30 +301,63 @@ public class HTTPConfig extends AppCompatActivity  implements GoogleApiClient.Co
 
     public void launch_command(String number){
         final String prefsfornumber = "url_comm"+number;
+
         //get url for command 1 from SP
         SharedPreferences sharedpreferences = getSharedPreferences(sprefs, Context.MODE_PRIVATE);
 
         String restoredText = sharedpreferences.getString(prefsfornumber, null);
-        new BackgroundTask().execute(restoredText);
+
+
+        new BackgroundTask().execute(number);
 
     }
     public class BackgroundTask extends AsyncTask<String, Void, String> {
         private static final String TAG = "BackgroundTask";
 
         @Override
-        protected String doInBackground(String... ulr) {
-            Response response = null;
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url(ulr[0])
-                    .build();
+        protected String doInBackground(String... num) {
 
-            try {
-                response = client.newCall(request).execute();
-                return response.body().string();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+            //get url for command 1 from SP
+            SharedPreferences sharedpreferences = getSharedPreferences(sprefs, Context.MODE_PRIVATE);
+            final String prefsfornumber = "url_comm"+num;
+            String restoredText = sharedpreferences.getString(prefsfornumber, null);
+            final String prefsforgetpost = "getpost_comm"+num;
+            final String prefsformimetype = "postmime_comm"+num;
+            final String prefsforpostdata = "postdata_comm"+num;
+            Boolean getorPost = sharedpreferences.getBoolean(prefsforgetpost, false);
+            String restoredMimeType = sharedpreferences.getString(prefsformimetype, null);
+            String restoredPostData = sharedpreferences.getString(prefsforpostdata, null);
+            //.post(RequestBody.create(MimeType, postBody))
+            if(!getorPost) {
+                Response response = null;
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(restoredText)
+                        .build();
+
+                try {
+                    response = client.newCall(request).execute();
+                    return response.body().string();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            else{
+                Response response = null;
+                OkHttpClient client = new OkHttpClient();
+                Request request = new Request.Builder()
+                        .url(restoredText)
+                        .post(RequestBody.create(MediaType.parse(restoredMimeType), restoredPostData))
+                        .build();
+
+                try {
+                    response = client.newCall(request).execute();
+                    return response.body().string();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
             return null;
 
